@@ -143,7 +143,7 @@ public class GangliaServer implements MonitorService {
    * Start this server, causing it to poll JMX at the configured frequency.
    */
   @Override
-  public void start() {
+  public boolean start() {
     try {
       socket = new DatagramSocket();
       hostname = InetAddress.getLocalHost().getHostName();
@@ -164,6 +164,7 @@ public class GangliaServer implements MonitorService {
     }
     service.scheduleWithFixedDelay(collectorRunnable, 0,
             pollFrequency, TimeUnit.SECONDS);
+    return true;
   }
 
   /**

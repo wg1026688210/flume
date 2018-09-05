@@ -46,13 +46,13 @@ public class TailFile {
   private final String path;
   private final long inode;
   private long pos;
-  private long lastUpdated;
+  private volatile long lastUpdated;//上一次更新语义(不是更新文件。。。)是一次事务提交关闭的更新时间。。。丫的。可能空闲那个线程还会读这个文件。读到的不是最新的所以超时12000秒太短了
   private boolean needTail;
   private final Map<String, String> headers;
-  private byte[] buffer;
-  private byte[] oldBuffer;
-  private int bufferPos;
-  private long lineReadPos;
+  private byte[] buffer; //缓存，存过的buffer
+  private byte[] oldBuffer;//之前如果没有读完。。。就是没有nl，会把他拼接下一回文件拼接  接着读；
+  private int bufferPos;//buffer读到哪里了
+  private long lineReadPos;//每行读的Pos
 
   public TailFile(File file, Map<String, String> headers, long inode, long pos)
       throws IOException {
@@ -107,7 +107,7 @@ public class TailFile {
     this.pos = pos;
   }
 
-  public void setLastUpdated(long lastUpdated) {
+  public void setLastUpdated(long lastUpdated) {//只有关了和提交的时候才会更改lastUpdated（）close和commit
     this.lastUpdated = lastUpdated;
   }
 
@@ -189,14 +189,14 @@ public class TailFile {
   public LineResult readLine() throws IOException {
     LineResult lineResult = null;
     while (true) {
-      if (bufferPos == NEED_READING) {
-        if (raf.getFilePointer() < raf.length()) {
+      if (bufferPos == NEED_READING) {//需要从磁盘抽文件
+        if (raf.getFilePointer() < raf.length()) {//如果还有文件未读
           readFile();
-        } else {
-          if (oldBuffer.length > 0) {
-            lineResult = new LineResult(false, oldBuffer);
-            oldBuffer = new byte[0];
-            setLineReadPos(lineReadPos + lineResult.line.length);
+        } else {//没有追加新的内容
+          if (oldBuffer.length > 0) {//如果之前还是有没有 f without nl 的字节（那一行没有nl ）
+            lineResult = new LineResult(false, oldBuffer);// 没有nl的一行
+            oldBuffer = new byte[0];//把oldBuffer设空（后续会把偏移量转到末尾那行开头的地方）
+            setLineReadPos(lineReadPos + lineResult.line.length);//这个文件最后行的文件的结尾（如果FWNL true）后续是要设回上一行结尾的
           }
           break;
         }

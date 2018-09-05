@@ -48,7 +48,7 @@ public class HDFSCompressedDataStream extends AbstractHDFSWriter {
 
   private String serializerType;
   private Context serializerContext;
-  private EventSerializer serializer;
+  private EventSerializer serializer;//干活的
   private boolean useRawLocalFileSystem;
   private Compressor compressor;
 

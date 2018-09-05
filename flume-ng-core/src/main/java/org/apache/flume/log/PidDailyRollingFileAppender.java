@@ -16,20 +16,19 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.flume.instrumentation;
+package org.apache.flume.log;
 
-import org.apache.flume.conf.Configurable;
 
-/**
- * Interface that any monitoring service should implement. If the monitor
- * service is to be started up when Flume starts, it should implement this
- * and the class name should be passed in during startup, with any additional
- * context it requires.
- */
-public interface MonitorService extends Configurable {
+import org.apache.log4j.RollingFileAppender;
 
-  public boolean start() throws InterruptedException;
+import java.lang.management.ManagementFactory;
 
-  public void stop();
+public class PidDailyRollingFileAppender  extends RollingFileAppender {
+
+    @Override
+    public void setFile(String file) {
+        String name = ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
+        super.setFile(file + '.' + name);
+    }
 
 }

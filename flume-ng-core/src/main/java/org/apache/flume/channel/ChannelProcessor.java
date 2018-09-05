@@ -159,6 +159,7 @@ public class ChannelProcessor implements Configurable {
       for (Channel ch : reqChannels) {
         List<Event> eventQueue = reqChannelQueue.get(ch);
         if (eventQueue == null) {
+
           eventQueue = new ArrayList<Event>();
           reqChannelQueue.put(ch, eventQueue);
         }
@@ -195,6 +196,7 @@ public class ChannelProcessor implements Configurable {
       } catch (Throwable t) {
         tx.rollback();
         if (t instanceof Error) {
+          
           LOG.error("Error while writing to required channel: " + reqChannel, t);
           throw (Error) t;
         } else if (t instanceof ChannelException) {

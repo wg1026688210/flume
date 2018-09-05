@@ -159,9 +159,13 @@ public class SinkConfiguration extends ComponentConfiguration {
      * HTTP Sink
      * @see org.apache.flume.sink.http.HttpSink
      */
-    HTTP("org.apache.flume.sink.http.HttpSinkConfiguration");
+    HTTP("org.apache.flume.sink.http.HttpSinkConfiguration"),
 
-
+    /*
+       汽车之家家定制file sink 配置
+       @see org.apache.flume.conf.sink.AHFileSinkConfiguration
+     */
+    AH_FILE_SINK("org.apache.flume.conf.sink.AHFileSinkConfiguration");
 
     private final String sinkConfigurationName;
 

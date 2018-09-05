@@ -82,7 +82,7 @@ public class TestFileChannel {
 
     // k1
     agentProps.put("a1.sinks.k1.channel", "c1");
-    agentProps.put("a1.sinks.k1.type", "FILE_ROLL");
+    agentProps.put("a1.sinks.k1.type", "");
     agentProps.put("a1.sinks.k1.sink.directory", sinkOutputDirPath);
     agentProps.put("a1.sinks.k1.sink.rollInterval", "0");
 

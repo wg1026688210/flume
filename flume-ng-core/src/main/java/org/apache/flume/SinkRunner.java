@@ -159,7 +159,7 @@ public class SinkRunner implements LifecycleAware {
           if (e instanceof EventDeliveryException) {
             counterGroup.incrementAndGet("runner.deliveryErrors");
           } else {
-            counterGroup.incrementAndGet("runner.errors");
+            counterGroup.incrementAndGet("runner`.errors");
           }
           try {
             Thread.sleep(maxBackoffSleep);

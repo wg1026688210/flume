@@ -235,7 +235,7 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
    * to the existing file.
    */
   public List<Long> updateTailFiles(boolean skipToEnd) throws IOException {
-    updateTime = System.currentTimeMillis();
+    updateTime = System.currentTimeMillis();//懂了，每次（查找是否有新的文件或者（旧的文件新的内容的时候才会更新））
     List<Long> updatedInodes = Lists.newArrayList();
 
     for (TaildirMatcher taildir : taildirCache) {

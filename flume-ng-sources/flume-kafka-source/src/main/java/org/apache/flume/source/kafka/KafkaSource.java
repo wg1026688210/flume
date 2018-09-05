@@ -501,6 +501,11 @@ public class KafkaSource extends AbstractPollableSource
   }
 
   @Override
+  public synchronized void start() {
+    super.start();
+  }
+
+  @Override
   protected void doStart() throws FlumeException {
     log.info("Starting {}...", this);
 

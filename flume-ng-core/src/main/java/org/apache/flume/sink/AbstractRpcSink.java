@@ -141,7 +141,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * This method will be called whenever this sink needs to create a new
  * connection to the source.
  */
-public abstract class AbstractRpcSink extends AbstractSink implements Configurable {
+public abstract class  AbstractRpcSink extends AbstractSink implements Configurable {
 
   private static final Logger logger = LoggerFactory.getLogger(AbstractRpcSink.class);
   private String hostname;

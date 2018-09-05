@@ -130,7 +130,7 @@ public class PollableSourceRunner extends SourceRunner {
         counterGroup.incrementAndGet("runner.polls");
 
         try {
-          if (source.process().equals(PollableSource.Status.BACKOFF)) {
+           if (source.process().equals(PollableSource.Status.BACKOFF)) {
             counterGroup.incrementAndGet("runner.backoffs");
 
             Thread.sleep(Math.min(

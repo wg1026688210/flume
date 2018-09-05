@@ -54,13 +54,14 @@ public abstract class AbstractHDFSWriter implements HDFSWriter {
 
   @Override
   public void configure(Context context) {
+    //这里设置minBlockReplicas
     configuredMinReplicas = context.getInteger("hdfs.minBlockReplicas");
     if (configuredMinReplicas != null) {
       Preconditions.checkArgument(configuredMinReplicas >= 0,
           "hdfs.minBlockReplicas must be greater than or equal to 0");
     }
     numberOfCloseRetries = context.getInteger("hdfs.closeTries", 1) - 1;
-
+    //超时时间和    配置的不一样
     if (numberOfCloseRetries > 1) {
       try {
         timeBetweenCloseRetries = context.getLong("hdfs.callTimeout", 10000L);

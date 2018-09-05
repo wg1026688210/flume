@@ -312,7 +312,7 @@ public class TaildirSource extends AbstractSource implements
 
   /**
    * Runnable class that writes a position file which has the last read position
-   * of each file.
+   * of each file.1534481913693 1534481913693 13365199127
    */
   private class PositionWriterRunnable implements Runnable {
     @Override

@@ -48,7 +48,7 @@ public enum SinkType {
    * @see RollingFileSink
    */
   FILE_ROLL("org.apache.flume.sink.RollingFileSink"),
-
+  AH_FILE_ROLL("org.apache.flume.sink.AHFileSink"),
   /**
    * HDFS Sink provided by org.apache.flume.sink.hdfs.HDFSEventSink
    */
@@ -107,6 +107,11 @@ public enum SinkType {
    */
   HIVE("org.apache.flume.sink.hive.HiveSink"),
 
+  /*
+    Autohome File Sink
+    @see org.apache.flume.sink.hive.AHFileSink
+   */
+  AH_FILE_SINK("org.apache.flume.sink.AHFileSink"),
   /**
    * HTTP Sink
    *

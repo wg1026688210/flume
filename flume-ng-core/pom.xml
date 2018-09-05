@@ -29,6 +29,7 @@ limitations under the License.
   <artifactId>flume-ng-core</artifactId>
   <name>Flume NG Core</name>
 
+
   <build>
     <pluginManagement>
       <plugins>
@@ -262,7 +263,40 @@ limitations under the License.
       <groupId>org.apache.flume</groupId>
       <artifactId>flume-ng-configuration</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.apache.flume</groupId>
+      <artifactId>common-entity</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.curator</groupId>
+      <artifactId>curator-x-discovery</artifactId>
+      <version>${curator.version}</version>
+      <exclusions>
+        <exclusion>
+          <artifactId>netty</artifactId>
+          <groupId>org.jboss.netty</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+      <!-- https://mvnrepository.com/artifact/org.apache.zookeeper/zookeeper -->
+      <dependency>
+          <groupId>org.apache.zookeeper</groupId>
+          <artifactId>zookeeper</artifactId>
+          <version>3.4.13</version>
+      </dependency>
 
+
+      <dependency>
+      <groupId>org.apache.curator</groupId>
+      <artifactId>curator-recipes</artifactId>
+      <version>${curator.version}</version>
+      <exclusions>
+        <exclusion>
+          <artifactId>netty</artifactId>
+          <groupId>org.jboss.netty</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
     <dependency>
       <groupId>org.apache.flume</groupId>
       <artifactId>flume-ng-auth</artifactId>
@@ -375,11 +409,23 @@ limitations under the License.
     <dependency>
       <groupId>org.apache.thrift</groupId>
       <artifactId>libthrift</artifactId>
+
     </dependency>
 
     <dependency>
       <groupId>org.apache.mina</groupId>
       <artifactId>mina-core</artifactId>
+    </dependency>
+      <dependency>
+          <groupId>org.apache.flume</groupId>
+          <artifactId>common-entity</artifactId>
+          <version>1.8.0</version>
+          <scope>compile</scope>
+      </dependency>
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>apache-log4j-extras</artifactId>
+      <version>${log4j-extras.version}</version>
     </dependency>
 
   </dependencies>

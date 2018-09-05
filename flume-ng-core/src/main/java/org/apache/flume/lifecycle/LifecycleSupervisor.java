@@ -38,8 +38,8 @@ public class LifecycleSupervisor implements LifecycleAware {
 
   private static final Logger logger = LoggerFactory.getLogger(LifecycleSupervisor.class);
 
-  private Map<LifecycleAware, Supervisoree> supervisedProcesses;
-  private Map<LifecycleAware, ScheduledFuture<?>> monitorFutures;
+  private Map<LifecycleAware, Supervisoree> supervisedProcesses;  //管理的程序
+  private Map<LifecycleAware, ScheduledFuture<?>> monitorFutures;//boss
 
   private ScheduledThreadPoolExecutor monitorService;
 

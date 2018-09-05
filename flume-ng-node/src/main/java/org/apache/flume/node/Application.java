@@ -37,6 +37,7 @@ import org.apache.flume.SinkRunner;
 import org.apache.flume.SourceRunner;
 import org.apache.flume.instrumentation.MonitorService;
 import org.apache.flume.instrumentation.MonitoringType;
+import org.apache.flume.instrumentation.http.HTTPMetricsServer;
 import org.apache.flume.lifecycle.LifecycleAware;
 import org.apache.flume.lifecycle.LifecycleState;
 import org.apache.flume.lifecycle.LifecycleSupervisor;
@@ -65,6 +66,9 @@ public class Application {
   private final LifecycleSupervisor supervisor;
   private MaterializedConfiguration materializedConfiguration;
   private MonitorService monitorServer;
+  private static String name="";
+  private static String zkConn="";
+  private static String zkPath="";
 
   public Application() {
     this(new ArrayList<LifecycleAware>(0));
@@ -87,6 +91,7 @@ public class Application {
     stopAllComponents();
     startAllComponents(conf);
   }
+
 
   public synchronized void stop() {
     supervisor.stop();
@@ -214,6 +219,15 @@ public class Application {
                 systemProps.getProperty(key));
           }
         }
+        if ("http".equals(monitorType)){
+          context.put(HTTPMetricsServer.CONFIG_NAME,Application.name);
+          context.put(HTTPMetricsServer.CONFIG_ZKCONNECTION,Application.zkConn);
+          context.put(HTTPMetricsServer.CONFIG_ZKPATH,Application.zkPath);
+          if (!"".equals(Application.zkConn)&&!"".equals(Application.zkPath)){
+            context.put(HTTPMetricsServer.CONFIG_REGISTERABLE,"true");
+          }
+        }
+
         monitorServer.configure(context);
         monitorServer.start();
       }
@@ -258,7 +272,6 @@ public class Application {
 
       option = new Option("h", "help", false, "display help text");
       options.addOption(option);
-
       CommandLineParser parser = new GnuParser();
       CommandLine commandLine = parser.parse(options, args);
 
@@ -267,7 +280,10 @@ public class Application {
         return;
       }
 
-      String agentName = commandLine.getOptionValue('n');
+      Application.name = commandLine.getOptionValue("n");
+      Application.zkConn=commandLine.getOptionValue("z");
+      Application.zkPath=commandLine.getOptionValue("p");
+
       boolean reload = !commandLine.hasOption("no-reload-conf");
 
       if (commandLine.hasOption('z') || commandLine.hasOption("zkConnString")) {
@@ -280,18 +296,18 @@ public class Application {
         String baseZkPath = commandLine.getOptionValue('p');
 
         if (reload) {
-          EventBus eventBus = new EventBus(agentName + "-event-bus");
+          EventBus eventBus = new EventBus(Application.name + "-event-bus");
           List<LifecycleAware> components = Lists.newArrayList();
           PollingZooKeeperConfigurationProvider zookeeperConfigurationProvider =
               new PollingZooKeeperConfigurationProvider(
-                  agentName, zkConnectionStr, baseZkPath, eventBus);
+                  Application.name, zkConnectionStr, baseZkPath, eventBus);
           components.add(zookeeperConfigurationProvider);
           application = new Application(components);
           eventBus.register(application);
         } else {
           StaticZooKeeperConfigurationProvider zookeeperConfigurationProvider =
               new StaticZooKeeperConfigurationProvider(
-                  agentName, zkConnectionStr, baseZkPath);
+                  Application.name, zkConnectionStr, baseZkPath);
           application = new Application();
           application.handleConfigurationEvent(zookeeperConfigurationProvider.getConfiguration());
         }
@@ -320,16 +336,16 @@ public class Application {
         List<LifecycleAware> components = Lists.newArrayList();
 
         if (reload) {
-          EventBus eventBus = new EventBus(agentName + "-event-bus");
+          EventBus eventBus = new EventBus(Application.name + "-event-bus");
           PollingPropertiesFileConfigurationProvider configurationProvider =
               new PollingPropertiesFileConfigurationProvider(
-                  agentName, configurationFile, eventBus, 30);
+                  Application.name, configurationFile, eventBus, 30);
           components.add(configurationProvider);
           application = new Application(components);
           eventBus.register(application);
         } else {
           PropertiesFileConfigurationProvider configurationProvider =
-              new PropertiesFileConfigurationProvider(agentName, configurationFile);
+              new PropertiesFileConfigurationProvider(Application.name, configurationFile);
           application = new Application();
           application.handleConfigurationEvent(configurationProvider.getConfiguration());
         }

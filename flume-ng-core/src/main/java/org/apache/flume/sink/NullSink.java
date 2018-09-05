@@ -88,7 +88,7 @@ public class NullSink extends AbstractSink implements Configurable {
       transaction.begin();
       int i = 0;
       for (i = 0; i < batchSize; i++) {
-        event = channel.take();
+        event = channel .take();
         if (++eventCounter % logEveryNEvents == 0) {
           logger.info("Null sink {} successful processed {} events.", getName(), eventCounter);
         }

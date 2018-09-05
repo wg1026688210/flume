@@ -28,6 +28,9 @@ import org.slf4j.LoggerFactory;
 /**
  * This class simply writes the body of the event to the output stream
  * and appends a newline after each event.
+ *
+ *
+ * //就一个writer  ???????????????
  */
 public class HeaderAndBodyTextEventSerializer implements EventSerializer {
 

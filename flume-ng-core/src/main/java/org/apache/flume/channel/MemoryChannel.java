@@ -96,6 +96,7 @@ public class MemoryChannel extends BasicChannelSemantics {
             takeList.size() + " full, consider committing more frequently, " +
             "increasing capacity, or increasing thread count");
       }
+
       if (!queueStored.tryAcquire(keepAlive, TimeUnit.SECONDS)) {
         return null;
       }

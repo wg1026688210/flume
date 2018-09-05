@@ -19,14 +19,7 @@
 package org.apache.flume.sink.hdfs;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -64,9 +57,7 @@ public class HDFSEventSink extends AbstractSink implements Configurable {
   }
 
   private static final Logger LOG = LoggerFactory.getLogger(HDFSEventSink.class);
-
   private static String DIRECTORY_DELIMITER = System.getProperty("file.separator");
-
   private static final long defaultRollInterval = 30;
   private static final long defaultRollSize = 1024;
   private static final long defaultRollCount = 10;
@@ -192,7 +183,7 @@ public class HDFSEventSink extends AbstractSink implements Configurable {
 
     filePath = Preconditions.checkNotNull(
         context.getString("hdfs.path"), "hdfs.path is required");
-    fileName = context.getString("hdfs.filePrefix", defaultFileName);
+    fileName = context.getString("hdfs.filePrefix", defaultFileName)+UUID.randomUUID().toString();
     this.suffix = context.getString("hdfs.fileSuffix", defaultSuffix);
     inUsePrefix = context.getString("hdfs.inUsePrefix", defaultInUsePrefix);
     inUseSuffix = context.getString("hdfs.inUseSuffix", defaultInUseSuffix);

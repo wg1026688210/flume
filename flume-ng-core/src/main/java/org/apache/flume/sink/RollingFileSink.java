@@ -144,7 +144,7 @@ public class RollingFileSink extends AbstractSink implements Configurable {
 
   @Override
   public Status process() throws EventDeliveryException {
-    if (shouldRotate) {
+    if (shouldRotate) {//是否需要翻转
       logger.debug("Time to rotate {}", pathController.getCurrentFile());
 
       if (outputStream != null) {
@@ -168,7 +168,7 @@ public class RollingFileSink extends AbstractSink implements Configurable {
       }
     }
 
-    if (outputStream == null) {
+    if (outputStream == null) {//有木有写的流
       File currentFile = pathController.getCurrentFile();
       logger.debug("Opening output stream for file {}", currentFile);
       try {

@@ -39,15 +39,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.security.PrivilegedExceptionAction;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -74,7 +66,7 @@ class BucketWriter {
   private final long batchSize;
   private final CompressionCodec codeC;
   private final CompressionType compType;
-  private final ScheduledExecutorService timedRollerPool;
+  private final ScheduledExecutorService timedRollerPool;//todo 线程安全
   private final PrivilegedExecutor proxyUser;
 
   private final AtomicLong fileExtensionCounter;
@@ -99,9 +91,9 @@ class BucketWriter {
   private SinkCounter sinkCounter;
   private final int idleTimeout;
   private volatile ScheduledFuture<Void> idleFuture;
-  private final WriterCallback onCloseCallback;
+  private final WriterCallback onCloseCallback;//
   private final String onCloseCallbackPath;
-  private final long callTimeout;
+  private final long callTimeout; //hdfs 超时监听
   private final ExecutorService callTimeoutPool;
   private final int maxConsecUnderReplRotations = 30; // make this config'able?
 
@@ -194,7 +186,7 @@ class BucketWriter {
     batchCounter = 0;
   }
 
-  private Method getRefIsClosed() {
+  private Method getRefIsClosed() {//todo 是否能关上
     try {
       return fileSystem.getClass().getMethod("isFileClosed",
         Path.class);
@@ -249,7 +241,7 @@ class BucketWriter {
         targetPath = filePath + "/" + fullFileName;
 
         LOG.info("Creating " + bucketPath);
-        callWithTimeout(new CallRunner<Void>() {
+        callWithTimeout(new CallRunner<Void>() { //打开文件
           @Override
           public Void call() throws Exception {
             if (codeC == null) {
@@ -442,7 +434,7 @@ class BucketWriter {
    * @throws IOException
    * @throws InterruptedException
    */
-  public synchronized void flush() throws IOException, InterruptedException {
+  public synchronized void flush() throws IOException, InterruptedException {//timeRollerPool设置成1
     checkAndThrowInterruptedException();
     if (!isBatchComplete()) {
       doFlush();
@@ -450,7 +442,7 @@ class BucketWriter {
       if (idleTimeout > 0) {
         // if the future exists and couldn't be cancelled, that would mean it has already run
         // or been cancelled
-        if (idleFuture == null || idleFuture.cancel(false)) {
+        if (idleFuture == null || idleFuture.cancel(false)) {//idlingTime需要被加上
           Callable<Void> idleAction = new Callable<Void>() {
             public Void call() throws Exception {
               LOG.info("Closing idle bucketWriter {} at {}", bucketPath,
@@ -677,7 +669,7 @@ class BucketWriter {
    * @throws InterruptedException
    */
   private static void checkAndThrowInterruptedException()
-          throws InterruptedException {
+          throws InterruptedException {    //程序调了这个，终端了
     if (Thread.currentThread().interrupted()) {
       throw new InterruptedException("Timed out before HDFS call was made. "
               + "Your hdfs.callTimeout might be set too low or HDFS calls are "
@@ -704,7 +696,7 @@ class BucketWriter {
       }
     });
     try {
-      if (callTimeout > 0) {
+      if (callTimeout > 0) {   // 可以调试下  这块callTimeout 设的值
         return future.get(callTimeout, TimeUnit.MILLISECONDS);
       } else {
         return future.get();
