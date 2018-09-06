@@ -87,7 +87,7 @@ public class HDFSCompressedDataStream extends AbstractHDFSWriter {
       }
     }
     boolean appending = false;
-    if (conf.getBoolean("hdfs.append.support", false) == true && hdfs.isFile(dstPath)) {
+    if (conf.getBoolean("hdfs.append.support", false) == true && hdfs.isFile(dstPath)) {//hdfs.append.support
       fsOut = hdfs.append(dstPath);
       appending = true;
     } else {
