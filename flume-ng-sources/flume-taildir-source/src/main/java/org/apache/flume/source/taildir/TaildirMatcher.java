@@ -28,12 +28,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.PathMatcher;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -194,7 +190,7 @@ public class TaildirMatcher {
     if (!cachePatternMatching ||
         lastSeenParentDirMTime < currentParentDirMTime ||
         !(currentParentDirMTime < lastCheckedTime)) {
-      lastMatchedFiles = sortByLastModifiedTime(getMatchingFilesNoCache());
+      lastMatchedFiles = getMatchingFilesNoCache();
       lastSeenParentDirMTime = currentParentDirMTime;
       lastCheckedTime = now;
     }
@@ -239,10 +235,20 @@ public class TaildirMatcher {
    * @param files list of files in any order
    * @return sorted list
    */
-  private static List<File> sortByLastModifiedTime(List<File> files) {
+  public static List<File> sortByLastModifiedTime(List<File> files) {
     final HashMap<File, Long> lastModificationTimes = new HashMap<File, Long>(files.size());
+
     for (File f: files) {
+      long createTime =0;
+      Path path = Paths.get(f.getAbsolutePath());
+      try {
+        BasicFileAttributes basicFileAttributes = Files.readAttributes(path, BasicFileAttributes.class);
+        createTime = basicFileAttributes.creationTime().toMillis();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
       lastModificationTimes.put(f, f.lastModified());
+
     }
     Collections.sort(files, new Comparator<File>() {
       @Override

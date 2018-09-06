@@ -359,7 +359,7 @@ public class HDFSEventSink extends AbstractSink implements Configurable {
         String realPath = BucketPath.escapeString(filePath, event.getHeaders(),
             timeZone, needRounding, roundUnit, roundValue, useLocalTime);
         String realName = BucketPath.escapeString(fileName, event.getHeaders(),
-            timeZone, needRounding, roundUnit, roundValue, useLocalTime);
+             timeZone, needRounding, roundUnit, roundValue, useLocalTime);
 
         String lookupPath = realPath + DIRECTORY_DELIMITER + realName;
         BucketWriter bucketWriter;
@@ -380,7 +380,7 @@ public class HDFSEventSink extends AbstractSink implements Configurable {
           bucketWriter = sfWriters.get(lookupPath);
           // we haven't seen this file yet, so open it and cache the handle
           if (bucketWriter == null) {
-            hdfsWriter = writerFactory.getWriter(fileType);
+            hdfsWriter = writerFactory.getWriter(fileType);//FixMe 是否要追加
             bucketWriter = initializeBucketWriter(realPath, realName,
               lookupPath, hdfsWriter, closeCallback);
             sfWriters.put(lookupPath, bucketWriter);

@@ -37,6 +37,11 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -315,5 +320,20 @@ public class TestTaildirSource {
     assertNotNull(e.getHeaders().get("path"));
     assertEquals(f1.getAbsolutePath(),
             e.getHeaders().get("path"));
+  }
+  @Test
+  public void testCreateTime() throws IOException {
+    Instant now = Instant.now();
+    for (int i =0;i<1000000;i++){
+     Path path = Paths.get("/Users/wgcn/mq.conf");
+     BasicFileAttributes basicFileAttributes = java.nio.file.Files.readAttributes(path, BasicFileAttributes.class);
+     long l = basicFileAttributes.creationTime().toMillis();
+   }
+    Instant now1 = Instant.now();
+    Duration between = Duration.between(now, now1);
+    long l = between.toMillis();
+    System.out.println(l);
+
+
   }
 }

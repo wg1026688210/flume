@@ -429,7 +429,8 @@ public class BucketPath {
   public static String escapeString(String in, Map<String, String> headers,
       TimeZone timeZone, boolean needRounding, int unit, int roundDown,
       boolean useLocalTimeStamp) {
-
+//filePath, event.getHeaders(),
+//            timeZone, needRounding, roundUnit, roundValue, useLocalTime
     long ts = clock.currentTimeMillis();
 
     Matcher matcher = tagPattern.matcher(in);
@@ -437,7 +438,7 @@ public class BucketPath {
     while (matcher.find()) {
       String replacement = "";
       // Group 2 is the %{...} pattern
-      if (matcher.group(2) != null) {
+      if (matcher.group(2) != null) { //Fixme 拼字符串
 
         replacement = headers.get(matcher.group(2));
         if (replacement == null) {

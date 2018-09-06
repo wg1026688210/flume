@@ -107,7 +107,7 @@ class BucketWriter {
   protected boolean closed = false;
   AtomicInteger renameTries = new AtomicInteger(0);
 
-  BucketWriter(long rollInterval, long rollSize, long rollCount, long batchSize,
+   BucketWriter(long rollInterval, long rollSize, long rollCount, long batchSize,
       Context context, String filePath, String fileName, String inUsePrefix,
       String inUseSuffix, String fileSuffix, CompressionCodec codeC,
       CompressionType compType, HDFSWriter writer,

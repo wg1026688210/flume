@@ -37,7 +37,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class AHFileSink extends AbstractSink implements Configurable {
+public class AHFileSink extends AbstractSink implements Configurable {//todo 将同步和检查过期句柄写在一个线程
     private static final Logger logger = LoggerFactory.getLogger(AHFileSink.class);
     private static String DIRECTORY_DELIMITER = System.getProperty("file.separator");
     private static final String BATCH_SIZE_CONF_NAME = "sink.batchSize";
