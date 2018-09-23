@@ -30,6 +30,8 @@ import org.slf4j.LoggerFactory;
 import sun.misc.Contended;
 
 import java.io.*;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -50,11 +52,15 @@ public class AHFileSink extends AbstractSink implements Configurable {//todo 将
     private static final int DEFAULT_CHECK_INTERVAL = 10;
     private static final String EVENT_HEADER_FILE_KEY = "file";
     private static final String UNKNOW_FILE = "UNKNOW_FILE";
+    private static final String FILE_WITH_HOST_CONF_NAME ="sink.fileWithHost";
+    private static final boolean DEFAULT_FILE_WITH_HOST_CONF_NAME=false;
+//    private String host ;//域名
     private String serializerType;//写文件的类型
     private int idleTime;//超时时间
     private int batchSize;//批量写的大小
     private File directory;//写入目录
     private int checkInterval;//check句柄的周期
+    private boolean fileWithHost;//是否文件带域名~
     private SinkCounter sinkCounter;
     private ScheduledExecutorService checkService;//定时去扫超时的句柄
     private Map<String, FileDes> fileDesCache = new ConcurrentHashMap<>();//文件句柄缓存
@@ -154,17 +160,18 @@ public class AHFileSink extends AbstractSink implements Configurable {//todo 将
                 if (event != null) {
                     sinkCounter.incrementEventDrainAttemptCount();
                     eventAttemptCounter++;
-                    String syncAbsolutePath = event.getHeaders().get(AHFileSink.EVENT_HEADER_FILE_KEY);//同步的文件
+
+                    Map<String, String> headers = event.getHeaders();
+                    String syncAbsolutePath = headers.get(AHFileSink.EVENT_HEADER_FILE_KEY);//同步的文件
                     String syncFile = syncAbsolutePath != null ? syncAbsolutePath : AHFileSink.UNKNOW_FILE;//获取服务端的文件名
                     if (this.fileDesCache.containsKey(syncFile)) {
                         fileDes = this.fileDesCache.get(syncFile).modifyUpdateTime(nowTime);
                     } else {//没有缓存这个文件的句柄就建一个新的句柄；
-                        fileDes = this.newFileDes(syncFile);
+                        fileDes = this.newFileDes(syncFile,headers);
                         this.fileDesCache.put(syncFile, fileDes);
                     }
                     fileDes.write(event);
                     fileDesUsed.add(fileDes);
-
                 } else {//搂不到数据就歇一会
                     sinkCounter.incrementBatchEmptyCount();
                     status = Status.BACKOFF;
@@ -187,9 +194,9 @@ public class AHFileSink extends AbstractSink implements Configurable {//todo 将
         return status;
     }
 
-    private FileDes newFileDes(String syncFile) throws FileNotFoundException {
+    private FileDes newFileDes(String syncFile,Map<String,String> headers) throws FileNotFoundException {
 
-        String fileName = this.getFileNameFromAbsolutePath(syncFile);//文件名
+        String fileName = this.getFileNameFromAbsolutePath(syncFile,headers);//文件名
         File absolutePathSync = new File(this.directory, fileName);//终极文件目录,啊哈哈
         BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(absolutePathSync, true));//建一个可追加的流
         long now = System.currentTimeMillis();//当前时间
@@ -200,9 +207,13 @@ public class AHFileSink extends AbstractSink implements Configurable {//todo 将
         return fileDes;
     }
 
-    private String getFileNameFromAbsolutePath(String syncFile) {
+    private String getFileNameFromAbsolutePath(String syncFile,Map<String,String > headers) {
         int index = syncFile.lastIndexOf(DIRECTORY_DELIMITER);
         String fileName = syncFile.substring(index + 1);
+        if (this.fileWithHost){
+            String host = headers.getOrDefault("host", "UNKNOWHOST");
+            fileName =host+"-"+fileName;
+        }
         return fileName;
     }
 
@@ -218,7 +229,6 @@ public class AHFileSink extends AbstractSink implements Configurable {//todo 将
 
     @Override
     public void configure(Context context) {
-        logger.info("配置一些东东,我们瞅瞅context中有啥");
         String directory = context.getString(AHFileSink.DIRTECTORY_CONF_NAME);
         Preconditions.checkArgument(directory != null, "Directory may not be null");
         this.batchSize = context.getInteger(AHFileSink.BATCH_SIZE_CONF_NAME, DEFAULT_BATCH_SIZE);
@@ -228,10 +238,12 @@ public class AHFileSink extends AbstractSink implements Configurable {//todo 将
                         EventSerializer.CTX_PREFIX));
         this.directory = new File(directory);
         this.idleTime = context.getInteger(AHFileSink.IDLE_TIME_CONF_NAME, 30000);
-        checkInterval = context.getInteger(AHFileSink.CHECK_INTERVAL_CONF_NAME, DEFAULT_CHECK_INTERVAL);
+        this.checkInterval = context.getInteger(AHFileSink.CHECK_INTERVAL_CONF_NAME, DEFAULT_CHECK_INTERVAL);
+        this.fileWithHost =context.getBoolean(AHFileSink.FILE_WITH_HOST_CONF_NAME,DEFAULT_FILE_WITH_HOST_CONF_NAME);
         if (sinkCounter == null) {
             sinkCounter = new SinkCounter(this.getName());
         }
+
     }
 
     @Override
