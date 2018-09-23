@@ -63,4 +63,21 @@ public class TaildirSourceConfigurationConstants {
   /** Whether to include absolute path filename in a header. */
   public static final String FILENAME_HEADER = "fileHeader";
   public static final boolean DEFAULT_FILE_HEADER = false;
+  /*
+    将文件名的日期信息解析出来的格式
+   */
+  public static final String FILE_DATE_FORMAT ="fileDateFormat";
+  public static final String DEFAULT_FILE_FORMAT = "";
+  /*
+    将文件名的日期放入header的格式
+   */
+  public static final String FILE_DATE_HEADER_FORMAT ="headerDateFormat";
+  public static final String DEFAULT_FILE_HEADER_FORMAT = "";
+
+  /*
+    是否可以截取文件的域名
+
+   */
+  public static final String FILE_HOST_ENABLE ="fileHostEnable";
+  public static final boolean DEFAULT_FILE_HOST_ENABLE = false;
 }

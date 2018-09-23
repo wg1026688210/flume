@@ -41,6 +41,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
@@ -52,7 +54,9 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
 
     private final List<TaildirMatcher> taildirCache;
     private final Table<String, String, String> headerTable;
-
+    private static final String HOUR_HEADER = "hour";
+    private static final String DATE_HEADER = "date";
+    private static final String HOST_HEADER = "host";
     private TailFile currentFile = null;
     private Map<Long, TailFile> tailFiles = Maps.newHashMap();
     private long updateTime;
@@ -61,6 +65,11 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
     private boolean committed = true;
     private final boolean annotateFileName;
     private final String fileNameHeader;
+    private String format;
+    private DateTimeFormatter dateTimeFormatter;
+    private DateTimeFormatter dateHeaderFormatter;
+    private boolean isFileTimeEnable;//是否能从文件名提取时间
+    private boolean isFileHostEnable;//是否能从文件名提取域名
 
     /**
      * Create a ReliableTaildirEventReader to watch the given directory.
@@ -68,7 +77,7 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
     private ReliableTaildirEventReader(Map<String, String> filePaths,
                                        Table<String, String, String> headerTable, String positionFilePath,
                                        boolean skipToEnd, boolean addByteOffset, boolean cachePatternMatching,
-                                       boolean annotateFileName, String fileNameHeader) throws IOException {
+                                       boolean annotateFileName, String fileNameHeader, String dateFileFormat, String dateHeaderFormat,boolean isFileHostEnable) throws IOException {
         // Sanity checks
         Preconditions.checkNotNull(filePaths);
         Preconditions.checkNotNull(positionFilePath);
@@ -91,10 +100,26 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
         this.cachePatternMatching = cachePatternMatching;
         this.annotateFileName = annotateFileName;
         this.fileNameHeader = fileNameHeader;
+        this.isFileHostEnable =isFileHostEnable;
+        if (!"".equals(dateFileFormat) && !"".equals(dateHeaderFormat)) {
+            this.useFileTimeFormat(dateFileFormat, dateHeaderFormat);
+        }
         updateTailFiles(skipToEnd);
 
         logger.info("Updating position from position file: " + positionFilePath);
         loadPositionFile(positionFilePath);
+    }
+
+    public ReliableTaildirEventReader useFileTimeFormat(String dateFormat, String dateHeaderFormat) {
+        this.format = dateFormat;
+        this.dateTimeFormatter = DateTimeFormatter.ofPattern(dateFormat);
+        this.dateHeaderFormatter = DateTimeFormatter.ofPattern(dateHeaderFormat);
+        this.enableGetFileTime();
+        return this;
+    }
+
+    private void enableGetFileTime() {
+        isFileTimeEnable = true;
     }
 
     /**
@@ -214,6 +239,7 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
         return events;
     }
 
+
     @Override
     public void close() throws IOException {
         for (TailFile tf : tailFiles.values()) {
@@ -234,6 +260,26 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
         }
     }
 
+    /*
+        从文件名中截取host
+     */
+    private static final String hostSplitor = "-";
+
+    private String getHostStr(String fileName) {
+        int index = fileName.indexOf(hostSplitor);
+        String host = fileName.substring(0, index);
+        return host;
+    }
+
+
+    private String getDateStr(String fileName) {//从文件名里截日期
+        int length = fileName.length();
+        int dateLength = this.format.length();
+        int start = length - dateLength;
+        String dateStr = fileName.substring(start);
+        return dateStr;
+    }
+
     /**
      * Update tailFiles mapping if a new file is created or appends are detected
      * to the existing file.
@@ -242,19 +288,36 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
         updateTime = System.currentTimeMillis();//懂了，每次（查找是否有新的文件或者（旧的文件新的内容的时候才会更新））
         List<File> files = Lists.newArrayList();
         for (TaildirMatcher taildir : taildirCache) {
+
             Map<String, String> headers = headerTable.row(taildir.getFileGroup());
 
             for (File f : taildir.getMatchingFiles()) {
+                HashMap<String, String> fileHeader = new HashMap<>();
+                fileHeader.putAll(headers);
+                String fileName = f.getName();
+                if (this.isFileTimeEnable) { //可以从文件名中截取时间
+                    String dateStr = this.getDateStr(fileName);
+                    LocalDateTime date = LocalDateTime.parse(dateStr, this.dateTimeFormatter);
+                    String hourHeader = String.format("%02d",date.getHour());
+                    String dateHeader = this.dateHeaderFormatter.format(date);
+                    fileHeader.put(HOUR_HEADER, hourHeader);
+                    fileHeader.put(DATE_HEADER, dateHeader);
+                }
+                if (this.isFileHostEnable) {//可以从文件名中截取域名,设这个的前提是丫你的文件名前缀是 host-
+                    String hostStr = this.getHostStr(fileName);
+                    fileHeader.put(HOST_HEADER, hostStr);
+                }
+
                 long inode = getInode(f);
                 TailFile tf = tailFiles.get(inode);
                 if (tf == null || !tf.getPath().equals(f.getAbsolutePath())) {
                     long startPos = skipToEnd ? f.length() : 0;
-                    tf = openFile(f, headers, inode, startPos);
+                    tf = openFile(f, fileHeader, inode, startPos);
                 } else {
                     boolean updated = tf.getLastUpdated() < f.lastModified() || tf.getPos() != f.length();
                     if (updated) {
                         if (tf.getRaf() == null) {
-                            tf = openFile(f, headers, inode, tf.getPos());
+                            tf = openFile(f, fileHeader, inode, tf.getPos());
                         }
                         if (f.length() < tf.getPos()) {
                             logger.info("Pos " + tf.getPos() + " is larger than file size! "
@@ -294,7 +357,6 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
     }
 
     public long getCreateTime(File file) {
-        String absolutePath = file.getAbsolutePath();
         Path path = Paths.get(file.getAbsolutePath());
         long createTime = 0;
         try {
@@ -335,6 +397,9 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
         private boolean skipToEnd;
         private boolean addByteOffset;
         private boolean cachePatternMatching;
+        private String dateFileFormat;
+        private String dateHeaderFormat;
+        private boolean isFileHostEnable;
         private Boolean annotateFileName =
                 TaildirSourceConfigurationConstants.DEFAULT_FILE_HEADER;
         private String fileNameHeader =
@@ -342,6 +407,10 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
 
         public Builder filePaths(Map<String, String> filePaths) {
             this.filePaths = filePaths;
+            return this;
+        }
+        public Builder isFileHostEnable(boolean isFileHostEnable){
+            this.isFileHostEnable =isFileHostEnable;
             return this;
         }
 
@@ -380,10 +449,20 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
             return this;
         }
 
+        public Builder dateFileFormat(String dateFileFormat) {
+            this.dateFileFormat = dateFileFormat;
+            return this;
+        }
+
+        public Builder dateHeaderFormat(String dateHeaderFormat) {
+            this.dateHeaderFormat = dateHeaderFormat;
+            return this;
+        }
+
         public ReliableTaildirEventReader build() throws IOException {
             return new ReliableTaildirEventReader(filePaths, headerTable, positionFilePath, skipToEnd,
                     addByteOffset, cachePatternMatching,
-                    annotateFileName, fileNameHeader);
+                    annotateFileName, fileNameHeader, dateFileFormat, dateHeaderFormat,isFileHostEnable);
         }
     }
 
