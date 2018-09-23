@@ -109,7 +109,7 @@ public class HDFSEventSink extends AbstractSink implements Configurable {
   private int maxOpenFiles;
   private ExecutorService callTimeoutPool;
   private ScheduledExecutorService timedRollerPool;
-
+  private boolean autoHomeHeaderPathEnable;
   private boolean needRounding = false;
   private int roundUnit = Calendar.SECOND;
   private int roundValue = 1;
@@ -183,7 +183,7 @@ public class HDFSEventSink extends AbstractSink implements Configurable {
 
     filePath = Preconditions.checkNotNull(
         context.getString("hdfs.path"), "hdfs.path is required");
-    fileName = context.getString("hdfs.filePrefix", defaultFileName)+UUID.randomUUID().toString();
+    fileName = context.getString("hdfs.filePrefix", defaultFileName)+getName()+UUID.randomUUID();
     this.suffix = context.getString("hdfs.fileSuffix", defaultSuffix);
     inUsePrefix = context.getString("hdfs.inUsePrefix", defaultInUsePrefix);
     inUseSuffix = context.getString("hdfs.inUseSuffix", defaultInUseSuffix);
@@ -212,6 +212,7 @@ public class HDFSEventSink extends AbstractSink implements Configurable {
           "is eventually closed.");
       tryCount = defaultTryCount;
     }
+    this.autoHomeHeaderPathEnable =context.getBoolean("hdfs.autoHomeDefinedPath",false);
     retryInterval = context.getLong("hdfs.retryInterval", defaultRetryInterval);
     if (retryInterval <= 0) {
       LOG.warn("Retry Interval value: " + retryInterval + " is not " +
@@ -354,14 +355,22 @@ public class HDFSEventSink extends AbstractSink implements Configurable {
         if (event == null) {
           break;
         }
+        String realPath =null ;
+        String realName =null ;
+        if (this.autoHomeHeaderPathEnable){
+          realPath = BucketPath.userDefindedHdfsSinkDirectoryEscapeString(filePath, event.getHeaders());
+          realName = BucketPath.userDefinedHdfsFileNameEscapeString(fileName, event.getHeaders());
+        }else{
+          // reconstruct the path name by substituting place holders
+          realPath = BucketPath.escapeString(filePath, event.getHeaders(),
+                  timeZone, needRounding, roundUnit, roundValue, useLocalTime);
+          realName = BucketPath.escapeString(fileName, event.getHeaders(),
+                  timeZone, needRounding, roundUnit, roundValue, useLocalTime);
+        }
 
-        // reconstruct the path name by substituting place holders
-        String realPath = BucketPath.escapeString(filePath, event.getHeaders(),
-            timeZone, needRounding, roundUnit, roundValue, useLocalTime);
-        String realName = BucketPath.escapeString(fileName, event.getHeaders(),
-             timeZone, needRounding, roundUnit, roundValue, useLocalTime);
 
-        String lookupPath = realPath + DIRECTORY_DELIMITER + realName;
+        String lookupPath =new StringBuilder(realPath).append(DIRECTORY_DELIMITER).append(realName).toString();
+        //String lookupPath = realPath + DIRECTORY_DELIMITER + realName;
         BucketWriter bucketWriter;
         HDFSWriter hdfsWriter = null;
         // Callback to remove the reference to the bucket writer from the
